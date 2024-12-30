@@ -1,5 +1,5 @@
 ﻿#include "../exercise.h"
-
+#include"cstring"
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
 
 template<class T>
@@ -8,10 +8,11 @@ struct Tensor4D {
     T *data;
 
     Tensor4D(unsigned int const shape_[4], T const *data_) {
-        unsigned int size = 1;
+        unsigned int size = shape_[0]*shape_[1]*shape_[2]*shape_[3];
         // TODO: 填入正确的 shape 并计算 size
         data = new T[size];
-        std::memcpy(data, data_, size * sizeof(T));
+        memcpy(data, data_, size * sizeof(T));
+		memcpy(shape, shape_, 4 * sizeof(int));
     }
     ~Tensor4D() {
         delete[] data;
@@ -27,7 +28,29 @@ struct Tensor4D {
     // 例如，`this` 形状为 `[1, 2, 3, 4]`，`others` 形状为 `[1, 2, 1, 4]`，
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
-        // TODO: 实现单向广播的加法
+        //TODO: 实现单向广播的加法
+		for(int i=0;i<shape[0];i++){
+			// printf("start i\n");
+			int i_o = (others.shape[0]==1)?0:i;
+			for(int j=0;j<shape[1];j++){
+				// printf("start j\n");
+				int j_o = (others.shape[1]==1)?0:j;
+				for(int k=0;k<shape[2];k++){
+					// printf("start k\n");
+					int k_o = (others.shape[2]==1)?0:k;
+					for(int z=0;z<shape[3];z++){
+						// printf("start l\n");
+						// printf("%d %d %d %d\n",i,j,k,z);
+						int z_o = (others.shape[3]==1)?0:z;
+						int index = i*shape[1]*shape[2]*shape[3]+j*shape[2]*shape[3]+k*shape[3]+z;
+						int index_o = i_o*others.shape[1]*others.shape[2]*others.shape[3]+j_o*others.shape[2]*others.shape[3]+k_o*others.shape[3]+z_o;
+						// printf("T data(%d,%d,%d,%d) is %d\n",i,j,k,z,data[index]);
+						// printf("O data(%d,%d,%d,%d) is %d\n",i_o,j_o,k_o,z_o,others.data[index_o]);
+						data[index] += others.data[index_o];
+					}
+				}
+			}
+		}
         return *this;
     }
 };
@@ -46,10 +69,12 @@ int main(int argc, char **argv) {
             17, 18, 19, 20,
             21, 22, 23, 24};
         // clang-format on
+		
         auto t0 = Tensor4D(shape, data);
         auto t1 = Tensor4D(shape, data);
         t0 += t1;
         for (auto i = 0u; i < sizeof(data) / sizeof(*data); ++i) {
+			// printf("data %d is %d",i,t0.data[i]);
             ASSERT(t0.data[i] == data[i] * 2, "Tensor doubled by plus its self.");
         }
     }
